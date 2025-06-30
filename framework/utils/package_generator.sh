@@ -47,9 +47,9 @@ package_from_config() {
 EOF
     
     # Extract all command names from JSON and generate function stubs
-    grep '"name"' "$config_file" | grep -v '"name": "' | sed 's/.*"name": *"\([^"]*\)".*/\1/' | while read -r cmd_name; do
-        if [ "$cmd_name" != "$module_name" ] && [ "$cmd_name" != "description" ] && [ "$cmd_name" != "alias" ]; then
-            cat >> "$commands_file" <<EOF
+    # Look for command names within the commands array
+    awk '/"commands": \[/,/^\s*\]/' "$config_file" | grep '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/' | while read -r cmd_name; do
+        cat >> "$commands_file" <<EOF
 $cmd_name() {
     print_info "Running $cmd_name..."
     # Your $cmd_name logic here
@@ -57,7 +57,6 @@ $cmd_name() {
 }
 
 EOF
-        fi
     done
     
     cat >> "$commands_file" <<EOF
@@ -66,10 +65,8 @@ help() {
 EOF
     
     # Add help entries for each command
-    grep '"name"' "$config_file" | grep -v '"name": "' | sed 's/.*"name": *"\([^"]*\)".*/\1/' | while read -r cmd_name; do
-        if [ "$cmd_name" != "$module_name" ] && [ "$cmd_name" != "description" ] && [ "$cmd_name" != "alias" ]; then
-            echo "    print_info \"  $cmd_name   - Run $cmd_name command\"" >> "$commands_file"
-        fi
+    awk '/"commands": \[/,/^\s*\]/' "$config_file" | grep '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/' | while read -r cmd_name; do
+        echo "    print_info \"  $cmd_name   - Run $cmd_name command\"" >> "$commands_file"
     done
     
     cat >> "$commands_file" <<EOF
@@ -108,10 +105,8 @@ show_help() {
 EOF
     
     # Add help entries for each command
-    grep '"name"' "$config_file" | grep -v '"name": "' | sed 's/.*"name": *"\([^"]*\)".*/\1/' | while read -r cmd_name; do
-        if [ "$cmd_name" != "$module_name" ] && [ "$cmd_name" != "description" ] && [ "$cmd_name" != "alias" ]; then
-            echo "    echo \"  $cmd_name   - Run $cmd_name command\"" >> "$module_script"
-        fi
+    awk '/"commands": \[/,/^\s*\]/' "$config_file" | grep '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/' | while read -r cmd_name; do
+        echo "    echo \"  $cmd_name   - Run $cmd_name command\"" >> "$module_script"
     done
     
     cat >> "$module_script" <<EOF
@@ -131,7 +126,7 @@ execute_subcommand() {
     
     case \$subcommand in
         help|--help|-h)
-            show_help
+            help
             ;;
         status)
             show_status
@@ -139,13 +134,11 @@ execute_subcommand() {
 EOF
     
     # Add case entries for each command
-    grep '"name"' "$config_file" | grep -v '"name": "' | sed 's/.*"name": *"\([^"]*\)".*/\1/' | while read -r cmd_name; do
-        if [ "$cmd_name" != "$module_name" ] && [ "$cmd_name" != "description" ] && [ "$cmd_name" != "alias" ]; then
-            echo "        $cmd_name)" >> "$module_script"
-            echo "            # Execute the function with remaining arguments" >> "$module_script"
-            echo "            \"\$subcommand\" \"\$@\"" >> "$module_script"
-            echo "            ;;" >> "$module_script"
-        fi
+    awk '/"commands": \[/,/^\s*\]/' "$config_file" | grep '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/' | while read -r cmd_name; do
+        echo "        $cmd_name)" >> "$module_script"
+        echo "            # Execute the function with remaining arguments" >> "$module_script"
+        echo "            \"\$subcommand\" \"\$@\"" >> "$module_script"
+        echo "            ;;" >> "$module_script"
     done
     
     cat >> "$module_script" <<EOF
