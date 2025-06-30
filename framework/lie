@@ -170,6 +170,10 @@ main() {
             # Generate completions from JSON configs
             source "$LIE_HOME/utils/completion_generator.sh"
             ;;
+        completions)
+            # Enable completions in .zshrc
+            source "$LIE_HOME/utils/completions.sh"
+            ;;
         *)
             # Check if it's an installed module
             local module_script="$MODULES_DIR/${COMMAND}/${COMMAND}.sh"

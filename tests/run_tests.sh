@@ -58,6 +58,7 @@ echo ""
 run_test "Simple Comprehensive Test" "test_simple.sh"
 run_test "Flag Parsing Test" "test_flags.sh"
 run_test "Basic Workflow Test" "test_new_workflow.sh"
+run_test "Completions Test" "test_completions.sh"
 
 # Summary
 echo -e "${BLUE}📊 Test Summary${NC}"

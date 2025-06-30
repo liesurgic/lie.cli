@@ -35,9 +35,17 @@ extract_commands_from_config() {
     if [ ! -f "$config_file" ]; then
         return 1
     fi
-    
-    # Extract command names from JSON and return as space-separated string
-    awk '/"commands": \[/,/^\s*\]/' "$config_file" | grep '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/' | tr '\n' ' '
+    # Extract only top-level command names (not flag names)
+    local in_flags=0
+    while IFS= read -r line; do
+        if echo "$line" | grep -q '"flags": \['; then
+            in_flags=1
+        elif [ $in_flags -eq 1 ] && echo "$line" | grep -q '^\s*\]'; then
+            in_flags=0
+        elif [ $in_flags -eq 0 ] && echo "$line" | grep -q '"name":'; then
+            echo "$line" | sed -n 's/.*"name": *"\([^"]*\)".*/\1/p'
+        fi
+    done < "$config_file" | tr '\n' ' '
 }
 
 # Extract flags from JSON config for a specific command
@@ -81,7 +89,8 @@ generate_module_completion() {
     
     # Extract commands from config
     local commands_str=$(extract_commands_from_config "$config_file")
-    local commands=($=commands_str)
+    # Zsh-compatible array assignment
+    local commands=(${=commands_str})
     
     if [ ${#commands[@]} -eq 0 ]; then
         print_warn "No commands found in config for $module_name"
@@ -124,7 +133,8 @@ EOF
     
     # Add command-specific completions
     for cmd in "${commands[@]}"; do
-        local flags=($(extract_flags_from_config "$config_file" "$cmd"))
+        local flags_str=$(extract_flags_from_config "$config_file" "$cmd")
+        local flags=(${=flags_str})
         if [ ${#flags[@]} -gt 0 ]; then
             echo "                $cmd)" >> "$completion_file"
             echo "                    _arguments \\" >> "$completion_file"
@@ -157,7 +167,8 @@ generate_alias_completion() {
     
     # Extract commands from config
     local commands_str=$(extract_commands_from_config "$config_file")
-    local commands=($=commands_str)
+    # Zsh-compatible array assignment
+    local commands=(${=commands_str})
     
     if [ ${#commands[@]} -eq 0 ]; then
         print_warn "No commands found in config for alias $alias_name"
@@ -200,7 +211,8 @@ EOF
     
     # Add command-specific completions
     for cmd in "${commands[@]}"; do
-        local flags=($(extract_flags_from_config "$config_file" "$cmd"))
+        local flags_str=$(extract_flags_from_config "$config_file" "$cmd")
+        local flags=(${=flags_str})
         if [ ${#flags[@]} -gt 0 ]; then
             echo "                $cmd)" >> "$completion_file"
             echo "                    _arguments \\" >> "$completion_file"
@@ -228,14 +240,17 @@ EOF
 generate_all_completions() {
     print_info "Generating completions for all modules..."
     
+    # Accept optional directory argument
+    local search_dir="${1:-.}"
+    
     # Create completions directory
     mkdir -p "$COMPLETIONS_DIR"
     
-    # Find all JSON configs in the current directory
-    local configs=($(find . -maxdepth 1 -name "*.json" -type f))
+    # Find all JSON configs in the specified directory
+    local configs=($(find "$search_dir" -maxdepth 1 -name "*.json" -type f))
     
     if [ ${#configs[@]} -eq 0 ]; then
-        print_warn "No JSON config files found in current directory"
+        print_warn "No JSON config files found in $search_dir"
         return 1
     fi
     
@@ -277,19 +292,25 @@ main() {
     else
         case "$1" in
             --help|-h)
-                echo "Usage: lie auto [options]"
+                echo "Usage: lie auto [directory] [options]"
                 echo ""
                 echo "Generate zsh completions for lie modules"
                 echo ""
                 echo "Options:"
-                echo "  --help, -h    Show this help message"
+                echo "  [directory]    Directory to search for JSON configs (default: .)"
+                echo "  --help, -h     Show this help message"
                 echo ""
                 echo "This command generates completion functions for all JSON config files"
-                echo "in the current directory and their associated aliases."
+                echo "in the specified directory (or current directory if not given) and their associated aliases."
                 ;;
             *)
-                print_error "Unknown option: $1"
-                exit 1
+                # If it's a directory, use it
+                if [ -d "$1" ]; then
+                    generate_all_completions "$1"
+                else
+                    print_error "Unknown option or directory: $1"
+                    exit 1
+                fi
                 ;;
         esac
     fi

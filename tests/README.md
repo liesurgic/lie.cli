@@ -1,62 +1,126 @@
-# Tests
+# lie CLI Framework - Test Suite
 
-This directory contains the test suites for the lie CLI framework.
+This directory contains comprehensive tests for the lie CLI framework.
 
-## Test Structure
+## Test Files
 
-- `run_tests.sh` - Main test runner that executes all test suites
-- `test_new_workflow.sh` - Tests the basic config-driven workflow
-- `test_comprehensive.sh` - Tests advanced functionality and edge cases
-- `.tmp/` - Directory for test artifacts (git ignored)
+- `test_simple.sh` - Basic workflow test (create → package → install → run)
+- `test_flags.sh` - Flag parsing test with various flag combinations
+- `test_new_workflow.sh` - New workflow test
+- `test_completions.sh` - **COMPLETIONS TEST (PARTIALLY WORKING)**
+- `run_tests.sh` - Test runner that executes all tests
 
-## Running Tests
+## Completions Functionality Status
+
+### ✅ What Works
+
+1. **Completion Generator Structure**
+   - `framework/utils/completion_generator.sh` - Main completion generator
+   - `framework/utils/completions.sh` - Zsh setup script
+   - `lie auto [directory]` - Generates completions from JSON configs
+   - `lie completions` - Adds completion setup to ~/.zshrc
+
+2. **Command Extraction**
+   - Robust extraction of command names from JSON configs
+   - Avoids extracting flag names (only gets top-level commands)
+   - Uses portable grep+sed approach (works on macOS and Linux)
+
+3. **Framework Integration**
+   - Completion commands integrated into main `lie` dispatcher
+   - Directory support for `lie auto` (can specify where to look for JSON configs)
+   - Idempotent zsh setup (won't add duplicate blocks to ~/.zshrc)
+
+4. **Test Infrastructure**
+   - Comprehensive test suite in `test_completions.sh`
+   - Tests both completion generation and zsh setup
+   - Isolated test environment using `.tmp` directory
+
+### ❌ What's Broken
+
+1. **Array Expansion Error**
+   - Persistent "bad math expression: operator expected at `descriptio...'" error
+   - Occurs in `generate_module_completion` function
+   - Prevents completion files from being generated properly
+
+2. **Alias Completion Generation**
+   - `_tc` file not being generated/updated correctly
+   - Module completion (`_lie-test_completions`) works partially
+   - Alias completion completely fails
+
+3. **Test Failures**
+   - `test_completions.sh` currently fails 2 out of 4 tests
+   - Module completion file format test fails
+   - Alias completion file not found
+
+### 🔧 Technical Details
+
+**Error Location:**
+- Error occurs in `framework/utils/completion_generator.sh`
+- Line 57 mentioned in error, but actual issue is in array expansion
+- Happens when script is sourced, not when functions are called
+
+**Array Expansion Attempts:**
+- Tried: `local commands=($=commands_str)` (zsh-specific)
+- Tried: `IFS=' ' read -r -a commands <<< "$commands_str"` (bash-specific)
+- Tried: `local commands=(${(s: :)commands_str})` (zsh-specific)
+- All failed with "bad math expression" or "bad option: -a"
+
+**Current Implementation:**
+```bash
+# Extract commands from config
+local commands_str=$(extract_commands_from_config "$config_file")
+# Zsh-compatible array assignment
+local commands=(${=commands_str})
+```
+
+## Next Steps for Debugging
+
+### 1. Immediate Debugging
+- Find the exact line causing the "bad math expression" error
+- Check if there are hidden characters or syntax issues
+- Verify the script works when run directly vs sourced
+
+### 2. Alternative Approaches
+- **Option A**: Rewrite completion generator in Python/Node.js
+- **Option B**: Use simpler shell constructs (avoid complex array operations)
+- **Option C**: Use `jq` for JSON parsing instead of grep/sed
+
+### 3. Simplified Solution
+- Focus on getting basic completion working first
+- Generate static completion files without dynamic array expansion
+- Add complexity incrementally
+
+## Test Commands
 
 ```bash
 # Run all tests
-./tests/run_tests.sh
+./run_tests.sh
 
-# Run individual tests
-./tests/test_new_workflow.sh
-./tests/test_comprehensive.sh
+# Run just completions test
+./test_completions.sh
+
+# Manual testing
+cd .tmp
+lie auto .  # Generate completions from current directory
+lie completions  # Setup zsh completions
 ```
 
-## Test Coverage
+## Files Generated
 
-### Basic Workflow Test (`test_new_workflow.sh`)
-- ✅ Config creation with interactive prompts
-- ✅ Config editing and customization
-- ✅ Package generation from config
-- ✅ Custom logic addition
-- ✅ Package installation
-- ✅ Alias creation and direct access
-- ✅ Both alias and lie prefix access
-- ✅ Module listing
+When working correctly, the completion generator should create:
+- `$HOME/.lie/completions/_lie-{module_name}` - Module completion
+- `$HOME/.lie/completions/_{alias_name}` - Alias completion
 
-### Comprehensive Test (`test_comprehensive.sh`)
-- ✅ Complex config creation with multiple commands
-- ✅ Flag parsing and argument handling
-- ✅ Package generation from complex configs
-- ✅ Custom logic with flag processing
-- ✅ Installation and alias creation
-- ✅ Both alias and lie prefix access
-- ✅ Help system and documentation
-- ✅ Error handling and validation
-- ✅ Module management and listing
-- ✅ Persistence and executable permissions
+## Zsh Setup
 
-## Test Artifacts
+The `lie completions` command adds this block to `~/.zshrc`:
+```bash
+# >>> liecli completion setup >>>
+fpath=($HOME/.lie/completions $fpath)
+autoload -U compinit && compinit
+# <<< liecli completion setup <<<
+```
 
-Test artifacts are created in the `.tmp/` directory and automatically cleaned up after each test run. This includes:
-- Generated JSON config files
-- Generated CLI packages
-- Temporary module installations
+## Last Updated
 
-## Adding New Tests
-
-To add a new test:
-
-1. Create a new test script in this directory
-2. Use the `TEST_TMP_DIR` variable for test artifacts
-3. Include proper cleanup in the test
-4. Add the test to `run_tests.sh`
-5. Update this README with test coverage information 
+July 1, 2024 - Completions functionality partially implemented but has persistent array expansion errors preventing full functionality. 
