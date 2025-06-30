@@ -67,7 +67,8 @@ show_help() {
     echo ""
     echo "Framework Commands:"
     echo "  create <module>        Create a new module from template"
-    echo "  add-command <module>   Add a subcommand to an existing module"
+    echo "  add-command <module>   Create a CLI package for development"
+    echo "  install <package>      Install a CLI package (e.g., hive_cli)"
     echo "  list                   List all installed modules"
     echo "  help                   Show this help message"
     echo ""
@@ -85,6 +86,40 @@ show_help() {
     
     echo ""
     echo "Happy Hacking! ☠️"
+}
+
+# Install a CLI package
+install_package() {
+    local package_name="$1"
+    
+    if [ -z "$package_name" ]; then
+        echo -e "${RED}Error: Please specify a package to install${NC}"
+        echo "Usage: lie install <package>"
+        echo "Example: lie install hive_cli"
+        exit 1
+    fi
+    
+    local package_dir="$package_name"
+    if [ ! -d "$package_dir" ]; then
+        echo -e "${RED}Error: Package directory '$package_dir' not found${NC}"
+        echo "Make sure you're in the directory containing the package"
+        exit 1
+    fi
+    
+    local install_script="$package_dir/install.sh"
+    if [ ! -f "$install_script" ]; then
+        echo -e "${RED}Error: Install script not found in '$package_dir'${NC}"
+        echo "Make sure this is a valid CLI package created with 'lie add-command'"
+        exit 1
+    fi
+    
+    echo -e "${BLUE}Installing CLI package: $package_name${NC}"
+    
+    # Run the install script
+    cd "$package_dir"
+    ./install.sh
+    
+    echo -e "${GREEN}✅ Package '$package_name' installed successfully!${NC}"
 }
 
 # Main execution
@@ -111,6 +146,9 @@ main() {
         add-command)
             source "$LIE_HOME/utils/subcommand_creator.sh"
             add_subcommand "$1"
+            ;;
+        install)
+            install_package "$1"
             ;;
         list)
             source "$LIE_HOME/utils/module_lister.sh"
