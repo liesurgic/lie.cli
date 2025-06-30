@@ -28,6 +28,8 @@ cleanup() {
     rm -f "$HOME/.local/bin/$TEST_ALIAS"
 }
 
+cleanup
+
 # Test functions
 test_step() {
     echo -e "${BLUE}📋 $1${NC}"
@@ -46,8 +48,7 @@ test_error() {
 
 # Test 1: Create config with complex structure
 test_step "1. Create Complex Config" "Creating config with multiple commands and flags"
-cd "$TEST_TMP_DIR"
-echo -e "Comprehensive test module with complex commands\n$TEST_ALIAS" | lie create $TEST_MODULE
+lie create -y $TEST_MODULE
 
 cat > "${TEST_MODULE}.json" <<EOF
 {

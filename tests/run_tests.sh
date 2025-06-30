@@ -19,8 +19,11 @@ echo -e "${BLUE}🧪 lie CLI Framework Test Suite${NC}"
 echo "====================================="
 echo ""
 
-# Ensure tmp directory exists
+# Clean slate: delete .tmp if exists, recreate it
+echo -e "${YELLOW}🧹 Setting up clean test environment...${NC}"
+rm -rf "$TMP_DIR"
 mkdir -p "$TMP_DIR"
+cd "$TMP_DIR"
 
 # Test results tracking
 TESTS_RUN=0
@@ -37,7 +40,7 @@ run_test() {
     
     TESTS_RUN=$((TESTS_RUN + 1))
     
-    if ./"$test_file"; then
+    if ../"$test_file"; then
         echo -e "${GREEN}✅ $test_name: PASSED${NC}"
         echo ""
         TESTS_PASSED=$((TESTS_PASSED + 1))
@@ -49,13 +52,12 @@ run_test() {
 }
 
 # Run all tests
-cd "$TEST_DIR"
-
 echo -e "${BLUE}🚀 Starting test execution...${NC}"
 echo ""
 
+run_test "Simple Comprehensive Test" "test_simple.sh"
+run_test "Flag Parsing Test" "test_flags.sh"
 run_test "Basic Workflow Test" "test_new_workflow.sh"
-run_test "Comprehensive Test" "test_comprehensive.sh"
 
 # Summary
 echo -e "${BLUE}📊 Test Summary${NC}"

@@ -81,65 +81,86 @@ package_from_config() {
 EOF
     
     # Extract all command names from JSON and generate function stubs with flag parsing
+    # Look for command names within the commands array
     awk '/"commands": \[/,/^\s*\]/' "$config_file" | grep '"name"' | sed 's/.*"name": *"\([^"]*\)".*/\1/' | while read -r cmd_name; do
         # Extract flags for this command
-        flags_output=$(extract_flags_for_command "$config_file" "$cmd_name")
+        local flags_output=$(extract_flags_for_command "$config_file" "$cmd_name")
         
         # Start the command function
         cat >> "$commands_file" <<EOF
 $cmd_name() {
 EOF
-        # Declare flag variables
+        
+        # Initialize flag variables
         if [ -n "$flags_output" ]; then
             echo "$flags_output" | while IFS=':' read -r flag_name shorthand description; do
                 if [ -n "$flag_name" ]; then
-                    var_name=$(echo "$flag_name" | tr '-' '_')
-                    echo "    local $var_name=\"\"" >> "$commands_file"
+                    # Convert flag name to variable name (replace hyphens with underscores)
+                    local var_name=$(echo "$flag_name" | tr '-' '_')
+                    cat >> "$commands_file" <<EOF
+    local $var_name=""
+EOF
                 fi
             done
         fi
+        
+        # Add argument parsing
         cat >> "$commands_file" <<EOF
+    
     # Parse arguments
     while [[ \$# -gt 0 ]]; do
         case \$1 in
 EOF
+        
         # Add flag parsing cases
         if [ -n "$flags_output" ]; then
             echo "$flags_output" | while IFS=':' read -r flag_name shorthand description; do
                 if [ -n "$flag_name" ]; then
-                    var_name=$(echo "$flag_name" | tr '-' '_')
+                    local var_name=$(echo "$flag_name" | tr '-' '_')
                     if [ -n "$shorthand" ]; then
-                        echo "            -$shorthand|--$flag_name)" >> "$commands_file"
-                        echo "                $var_name=\"\$2\"" >> "$commands_file"
-                        echo "                shift 2" >> "$commands_file"
-                        echo "                ;;" >> "$commands_file"
+                        cat >> "$commands_file" <<EOF
+            -$shorthand|--$flag_name)
+                $var_name="\$2"
+                shift 2
+                ;;
+EOF
                     else
-                        echo "            --$flag_name)" >> "$commands_file"
-                        echo "                $var_name=\"\$2\"" >> "$commands_file"
-                        echo "                shift 2" >> "$commands_file"
-                        echo "                ;;" >> "$commands_file"
+                        cat >> "$commands_file" <<EOF
+            --$flag_name)
+                $var_name="\$2"
+                shift 2
+                ;;
+EOF
                     fi
                 fi
             done
         fi
+        
+        # Add help and default cases
         cat >> "$commands_file" <<EOF
             --help|-h)
                 echo "Usage: $cmd_name [options]"
                 echo ""
                 echo "Options:"
 EOF
+        
         # Add help text for flags
         if [ -n "$flags_output" ]; then
             echo "$flags_output" | while IFS=':' read -r flag_name shorthand description; do
                 if [ -n "$flag_name" ]; then
                     if [ -n "$shorthand" ]; then
-                        echo "                -$shorthand, --$flag_name    $description" >> "$commands_file"
+                        cat >> "$commands_file" <<EOF
+                -$shorthand, --$flag_name    $description
+EOF
                     else
-                        echo "                --$flag_name    $description" >> "$commands_file"
+                        cat >> "$commands_file" <<EOF
+                --$flag_name    $description
+EOF
                     fi
                 fi
             done
         fi
+        
         cat >> "$commands_file" <<EOF
                 --help, -h       Show this help message
                 ;;
@@ -148,8 +169,28 @@ EOF
                 ;;
         esac
     done
-    print_info "Running $cmd_name..."
+    
     # Your $cmd_name logic here
+    print_info "Running $cmd_name..."
+EOF
+        
+        # Add example usage of flag variables
+        if [ -n "$flags_output" ]; then
+            echo "$flags_output" | while IFS=':' read -r flag_name shorthand description; do
+                if [ -n "$flag_name" ]; then
+                    local var_name=$(echo "$flag_name" | tr '-' '_')
+                    cat >> "$commands_file" <<EOF
+    # Example: Use the $flag_name flag
+    # if [ -n "\$$var_name" ]; then
+    #     print_info "$flag_name is set to: \$$var_name"
+    # fi
+EOF
+                fi
+            done
+        fi
+        
+        cat >> "$commands_file" <<EOF
+    
     print_success "$cmd_name completed!"
 }
 

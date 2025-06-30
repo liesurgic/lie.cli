@@ -27,6 +27,10 @@ uninstall:
 	@echo "Uninstalling lie CLI Framework..."
 	@./uninstall.sh
 
+reinstall: uninstall install
+	@echo "Reloading shell configuration..."
+	@zsh -c "source ~/.zshrc"
+
 # Run tests
 test:
 	@echo "Running lie CLI Framework tests..."

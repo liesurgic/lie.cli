@@ -1,0 +1,39 @@
+{
+    "name": "test-flags",
+    "description": "Test module for flag parsing",
+    "alias": "testflags",
+    "commands": [
+        {
+            "name": "deploy",
+            "description": "Deploy the application",
+            "flags": [
+                {
+                    "name": "environment",
+                    "shorthand": "e",
+                    "description": "Target environment"
+                },
+                {
+                    "name": "force",
+                    "shorthand": "f",
+                    "description": "Force deployment"
+                }
+            ]
+        },
+        {
+            "name": "build",
+            "description": "Build the application",
+            "flags": [
+                {
+                    "name": "production",
+                    "shorthand": "p",
+                    "description": "Build for production"
+                }
+            ]
+        },
+        {
+            "name": "test",
+            "description": "Run tests",
+            "flags": []
+        }
+    ]
+} 

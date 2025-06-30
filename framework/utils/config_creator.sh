@@ -3,10 +3,29 @@
 # Config Creator Utility for lie CLI Framework
 
 create_config() {
-    local module_name="$1"
+    local module_name=""
+    local skip_prompts=false
+    
+    # Parse arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            -y|--yes)
+                skip_prompts=true
+                shift
+                ;;
+            *)
+                if [ -z "$module_name" ]; then
+                    module_name="$1"
+                fi
+                shift
+                ;;
+        esac
+    done
+    
     if [ -z "$module_name" ]; then
         echo -e "${RED}Error: Please specify a module name${NC}"
         echo "Usage: lie create <module-name>"
+        echo "       lie create -y <module-name>  # Skip prompts (for testing)"
         exit 1
     fi
     
@@ -19,15 +38,22 @@ create_config() {
     echo -e "${BLUE}Creating config for module: $module_name${NC}"
     echo ""
     
-    # Interactive prompts
+    # Interactive prompts or default values
     local description=""
     local alias=""
     
-    echo -e "${YELLOW}→ Module description (what does this module do?):${NC}"
-    read -r description
-    
-    echo -e "${YELLOW}→ Alias (optional, for direct command access like 'hive start'):${NC}"
-    read -r alias
+    if [ "$skip_prompts" = true ]; then
+        # Use default values for automated testing
+        description="Test module for $module_name"
+        alias="${module_name}_alias"
+        echo -e "${YELLOW}Using default values (non-interactive mode)${NC}"
+    else
+        echo -e "${YELLOW}→ Module description (what does this module do?):${NC}"
+        read -r description
+        
+        echo -e "${YELLOW}→ Alias (optional, for direct command access like 'hive start'):${NC}"
+        read -r alias
+    fi
     
     # Create initial config
     cat > "$config_file" <<EOF

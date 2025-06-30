@@ -149,7 +149,7 @@ main() {
             ;;
         create)
             source "$LIE_HOME/utils/config_creator.sh"
-            create_config "$1"
+            create_config "$@"
             ;;
         package)
             source "$LIE_HOME/utils/package_generator.sh"
@@ -165,6 +165,10 @@ main() {
         list)
             source "$LIE_HOME/utils/module_lister.sh"
             list_modules
+            ;;
+        auto)
+            # Generate completions from JSON configs
+            source "$LIE_HOME/utils/completion_generator.sh"
             ;;
         *)
             # Check if it's an installed module

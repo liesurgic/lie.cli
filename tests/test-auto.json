@@ -1,0 +1,44 @@
+{
+    "name": "test-auto",
+    "description": "Test module for autocomplete generation",
+    "alias": "ta",
+    "commands": [
+        {
+            "name": "deploy",
+            "description": "Deploy the application",
+            "flags": [
+                {
+                    "name": "environment",
+                    "shorthand": "e",
+                    "description": "Target environment"
+                },
+                {
+                    "name": "force",
+                    "shorthand": "f",
+                    "description": "Force deployment"
+                }
+            ]
+        },
+        {
+            "name": "build",
+            "description": "Build the application",
+            "flags": [
+                {
+                    "name": "production",
+                    "shorthand": "p",
+                    "description": "Build for production"
+                }
+            ]
+        },
+        {
+            "name": "test",
+            "description": "Run tests",
+            "flags": []
+        },
+        {
+            "name": "status",
+            "description": "Show status",
+            "flags": []
+        }
+    ]
+} 

@@ -19,13 +19,14 @@ TEST_TMP_DIR="$(dirname "$0")/.tmp"
 echo -e "${BLUE}🧪 Testing New Config-Driven Workflow${NC}"
 echo "=========================================="
 
-# Cleanup
 cleanup() {
     echo -e "${YELLOW}🧹 Cleaning up...${NC}"
     rm -rf "$TEST_TMP_DIR/${TEST_MODULE}.json" "$TEST_TMP_DIR/${TEST_MODULE}_cli"
     rm -rf "$LIE_HOME/modules/$TEST_MODULE"
     rm -f "$HOME/.local/bin/$TEST_ALIAS"
 }
+
+cleanup
 
 # Test functions
 test_step() {
@@ -46,7 +47,7 @@ test_error() {
 # Test 1: Create config
 test_step "1. Create Config" "Creating config file"
 cd "$TEST_TMP_DIR"
-echo -e "Test workflow module\n$TEST_ALIAS" | lie create $TEST_MODULE
+lie create -y $TEST_MODULE
 
 if [ ! -f "${TEST_MODULE}.json" ]; then
     test_error "Config file not created"
