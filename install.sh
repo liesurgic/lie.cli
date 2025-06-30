@@ -21,7 +21,7 @@ echo -e "${BLUE}Installing lie CLI Framework...${NC}"
 
 # Create lie home directory
 mkdir -p "$LIE_HOME"
-mkdir -p "$LIE_HOME/commands"
+mkdir -p "$LIE_HOME/modules"
 mkdir -p "$LIE_HOME/utils"
 mkdir -p "$LIE_HOME/templates"
 mkdir -p "$LIE_HOME/config"
@@ -71,7 +71,7 @@ if [ ! -f "$LIE_HOME/config/config.json" ]; then
 {
   "framework": {
     "version": "1.0.0",
-    "commands_dir": "commands",
+    "modules_dir": "modules",
     "utils_dir": "utils",
     "templates_dir": "templates"
   },

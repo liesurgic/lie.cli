@@ -1,7 +1,7 @@
 #!/bin/zsh
 
 # lie CLI Framework - Main Dispatcher
-# Provides modular command infrastructure
+# Provides modular command infrastructure with subcommand support
 
 set -e
 setopt +o nomatch  # Prevent "no matches found" errors for globs
@@ -16,14 +16,13 @@ NC='\033[0m' # No Color
 
 # Framework paths
 LIE_HOME="$HOME/.lie"
-COMMANDS_DIR="$LIE_HOME/commands"
+MODULES_DIR="$LIE_HOME/modules"
 UTILS_DIR="$LIE_HOME/utils"
 CONFIG_FILE="$LIE_HOME/config/config.json"
 
 # Load configuration
 load_config() {
     if [ -f "$CONFIG_FILE" ]; then
-        # Simple JSON parsing for basic config
         FRAMEWORK_VERSION=$(grep '"version"' "$CONFIG_FILE" | sed 's/.*"version": *"\([^"]*\)".*/\1/')
         LOG_LEVEL=$(grep '"log_level"' "$CONFIG_FILE" | sed 's/.*"log_level": *"\([^"]*\)".*/\1/')
     else
@@ -64,309 +63,28 @@ log() {
 show_help() {
     echo -e "${BLUE}lie CLI Framework v${FRAMEWORK_VERSION}${NC}"
     echo ""
-    echo "Usage: lie <command> [subcommand] [options]"
+    echo "Usage: lie <module> [subcommand] [options]"
     echo ""
     echo "Framework Commands:"
-    echo "  install <command>    Install a command from a repository or local path (.sh file)"
-    echo "  uninstall <command>  Remove an installed command"
-    echo "  create <name>        Create a new command from template"
-    echo "  list                 List all installed commands"
-    echo "  info <command>       Show information about a command"
-    echo "  update               Update the framework"
-    echo "  help                 Show this help message"
+    echo "  create <module>        Create a new module from template"
+    echo "  add-command <module>   Add a subcommand to an existing module"
+    echo "  list                   List all installed modules"
+    echo "  help                   Show this help message"
     echo ""
-    echo "Installed Commands:"
+    echo "Installed Modules:"
     
-    # List installed commands
-    if [ -d "$COMMANDS_DIR" ]; then
-        for cmd in "$COMMANDS_DIR"/*.sh; do
-            if [ -f "$cmd" ]; then
-                cmd_name=$(basename "$cmd" .sh)
-                echo "  $cmd_name"
+    # List installed modules
+    if [ -d "$MODULES_DIR" ]; then
+        for module in "$MODULES_DIR"/*; do
+            if [ -d "$module" ]; then
+                module_name=$(basename "$module")
+                echo "  $module_name"
             fi
         done
     fi
     
     echo ""
     echo "Happy Hacking! ☠️"
-}
-
-# List installed commands
-list_commands() {
-    echo -e "${BLUE}Installed Commands:${NC}"
-    echo ""
-    
-    if [ ! -d "$COMMANDS_DIR" ] || [ -z "$(ls -A "$COMMANDS_DIR" 2>/dev/null)" ]; then
-        echo -e "${YELLOW}No commands installed yet.${NC}"
-        echo "Use 'lie install <command>' to install your first command."
-        return
-    fi
-    
-    for cmd in "$COMMANDS_DIR"/*.sh; do
-        if [ -f "$cmd" ]; then
-            cmd_name=$(basename "$cmd" .sh)
-            echo -e "  ${GREEN}$cmd_name${NC}"
-        fi
-    done
-}
-
-# Install a command
-install_command() {
-    local source="$1"
-    
-    if [ -z "$source" ]; then
-        echo -e "${RED}Error: Please specify a command to install${NC}"
-        echo "Usage: lie install <command>"
-        exit 1
-    fi
-    
-    echo -e "${BLUE}Installing command: $source${NC}"
-    
-    # For now, just copy .sh files from the source
-    # This can be expanded to handle git repos, URLs, etc.
-    if [ -f "$source" ] && [[ "$source" == *.sh ]]; then
-        local cmd_name=$(basename "$source" .sh)
-        cp "$source" "$COMMANDS_DIR/$cmd_name.sh"
-        chmod +x "$COMMANDS_DIR/$cmd_name.sh"
-        echo -e "${GREEN}✅ Command '$cmd_name' installed successfully!${NC}"
-    else
-        echo -e "${RED}Error: Invalid command source. Expected a .sh file.${NC}"
-        exit 1
-    fi
-}
-
-# Uninstall a command
-uninstall_command() {
-    local cmd_name="$1"
-    
-    if [ -z "$cmd_name" ]; then
-        echo -e "${RED}Error: Please specify a command to uninstall${NC}"
-        echo "Usage: lie uninstall <command>"
-        exit 1
-    fi
-    
-    local cmd_path="$COMMANDS_DIR/$cmd_name.sh"
-    
-    if [ -f "$cmd_path" ]; then
-        rm "$cmd_path"
-        echo -e "${GREEN}✅ Command '$cmd_name' uninstalled successfully!${NC}"
-    else
-        echo -e "${RED}Error: Command '$cmd_name' not found${NC}"
-        exit 1
-    fi
-}
-
-# Show command info
-show_command_info() {
-    local cmd_name="$1"
-    
-    if [ -z "$cmd_name" ]; then
-        echo -e "${RED}Error: Please specify a command${NC}"
-        echo "Usage: lie info <command>"
-        exit 1
-    fi
-    
-    local cmd_path="$COMMANDS_DIR/$cmd_name.sh"
-    
-    if [ -f "$cmd_path" ]; then
-        echo -e "${BLUE}Command: $cmd_name${NC}"
-        echo -e "${BLUE}Path: $cmd_path${NC}"
-        echo -e "${BLUE}Size: $(ls -lh "$cmd_path" | awk '{print $5}')${NC}"
-        echo -e "${BLUE}Modified: $(ls -lh "$cmd_path" | awk '{print $6, $7, $8}')${NC}"
-        echo ""
-        echo -e "${BLUE}First 10 lines:${NC}"
-        head -10 "$cmd_path"
-    else
-        echo -e "${RED}Error: Command '$cmd_name' not found${NC}"
-        exit 1
-    fi
-}
-
-# Create a new command from template
-create_command() {
-    local cmd_name="$1"
-    if [ -z "$cmd_name" ]; then
-        echo -e "${RED}Error: Please specify a command name${NC}"
-        echo "Usage: lie create <command-name>"
-        exit 1
-    fi
-    # Validate command name (basic validation)
-    if [[ ! "$cmd_name" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]]; then
-        echo -e "${RED}Error: Invalid command name '$cmd_name'${NC}"
-        echo "Command names must start with a letter and contain only letters, numbers, hyphens, and underscores"
-        exit 1
-    fi
-    local target_path="./${cmd_name}.sh"
-    if [ -f "$target_path" ]; then
-        echo -e "${RED}Error: File '$target_path' already exists${NC}"
-        echo "Please choose a different name or remove the existing file"
-        exit 1
-    fi
-    echo -e "${BLUE}Creating command: $cmd_name${NC}"
-    echo ""
-    # Interactive prompts
-    local description=""
-    local flags=()
-    local flag_descriptions=()
-    local flag_shorthands=()
-    # Get command description
-    echo -e "${YELLOW}→ Command description (what does this command do?):${NC}"
-    read -r description
-    # Get flags
-    echo ""
-    echo -e "${YELLOW}→ Add flags (e.g., verbose, quiet, force) or press Enter to skip:${NC}"
-    while true; do
-        echo -e "${CYAN}Flag name (or Enter to finish):${NC}"
-        read -r flag_name
-        if [ -z "$flag_name" ]; then
-            break
-        fi
-        # Validate flag name
-        if [[ ! "$flag_name" =~ ^[a-zA-Z][a-zA-Z0-9_-]*$ ]]; then
-            echo -e "${RED}Invalid flag name. Must start with a letter and contain only letters, numbers, hyphens, and underscores${NC}"
-            continue
-        fi
-        echo -e "${CYAN}Flag description:${NC}"
-        read -r flag_desc
-        echo -e "${CYAN}Shorthand (e.g., v for verbose, or Enter to skip):${NC}"
-        read -r flag_short
-        flags+=("$flag_name")
-        flag_descriptions+=("$flag_desc")
-        flag_shorthands+=("$flag_short")
-        echo -e "${GREEN}✓ Added flag: --$flag_name${NC}"
-        if [ -n "$flag_short" ]; then
-            echo -e "${GREEN}  Shorthand: -$flag_short${NC}"
-        fi
-        echo ""
-    done
-    # Build the script content using a heredoc for robustness
-    cat > "$target_path" <<EOF
-#!/bin/zsh
-
-# Generated command for lie CLI Framework
-LIE_HOME="${LIE_HOME:-$HOME/.lie}"
-# Source common utilities
-source "\$LIE_HOME/utils/common.sh"
-
-# Command metadata
-COMMAND_NAME="$cmd_name"
-COMMAND_VERSION="1.0.0"
-COMMAND_DESCRIPTION="$description"
-
-# Show command help
-show_help() {
-    echo -e "\${BLUE}\$COMMAND_NAME v\$COMMAND_VERSION\${NC}"
-    echo ""
-    echo "Description: \$COMMAND_DESCRIPTION"
-    echo ""
-    echo "Usage: lie \$COMMAND_NAME [options]"
-    echo ""
-    echo "Options:"
-EOF
-    # Add flags help
-    i=0
-    while [ $i -lt ${#flags[@]} ]; do
-        flag="${flags[$i]}"
-        desc="${flag_descriptions[$i]}"
-        short="${flag_shorthands[$i]}"
-        if [ -n "$short" ]; then
-            echo "    echo \"  --$flag, -$short    $desc\"" >> "$target_path"
-        else
-            echo "    echo \"  --$flag            $desc\"" >> "$target_path"
-        fi
-        i=$((i+1))
-    done
-    if [ ${#flags[@]} -eq 0 ]; then
-        echo "    echo \"  (no flags defined)\"" >> "$target_path"
-    fi
-    cat >> "$target_path" <<EOF
-    echo "  --help, -h       Show this help message"
-    echo ""
-    echo "Examples:"
-    echo "  lie \$COMMAND_NAME"
-    echo "  lie \$COMMAND_NAME --help"
-}
-
-# Main command logic
-main_command() {
-EOF
-    i=0
-    while [ $i -lt ${#flags[@]} ]; do
-        flag="${flags[$i]}"
-        echo "    local ${flag}_flag=false" >> "$target_path"
-        i=$((i+1))
-    done
-    cat >> "$target_path" <<EOF
-
-    # Parse arguments
-    while [[ \$# -gt 0 ]]; do
-        case \$1 in
-EOF
-    i=0
-    while [ $i -lt ${#flags[@]} ]; do
-        flag="${flags[$i]}"
-        short="${flag_shorthands[$i]}"
-        if [ -n "$short" ]; then
-            echo "            --$flag|-$short)" >> "$target_path"
-            echo "                ${flag}_flag=true" >> "$target_path"
-            echo "                shift" >> "$target_path"
-            echo "                ;;" >> "$target_path"
-        else
-            echo "            --$flag)" >> "$target_path"
-            echo "                ${flag}_flag=true" >> "$target_path"
-            echo "                shift" >> "$target_path"
-            echo "                ;;" >> "$target_path"
-        fi
-        i=$((i+1))
-    done
-    cat >> "$target_path" <<EOF
-            --help|-h)
-                show_help
-                exit 0
-                ;;
-            -*)
-                print_error "Unknown option: \$1"
-                exit 1
-                ;;
-            *)
-                break
-                ;;
-        esac
-    done
-
-    # Your command logic goes here
-    print_info "Hello from \$COMMAND_NAME!"
-    print_success "Command executed successfully"
-}
-
-# Main execution
-main() {
-    # Show help if no arguments provided
-    if [ \$# -eq 0 ]; then
-        main_command
-        exit 0
-    fi
-    
-    # Check for help flag
-    if [ "\$1" = "--help" ] || [ "\$1" = "-h" ]; then
-        show_help
-        exit 0
-    fi
-    
-    # Pass all arguments to main command logic
-    main_command "\$@"
-}
-
-# Run main function with all arguments
-main "\$@"
-EOF
-    chmod +x "$target_path"
-    echo -e "${GREEN}✅ Created command: $target_path${NC}"
-    echo ""
-    echo -e "${BLUE}Next steps:${NC}"
-    echo "  1. Review and edit the generated command"
-    echo "  2. Install with: lie install $target_path"
-    echo "  3. Test with: lie $cmd_name"
 }
 
 # Main execution
@@ -386,33 +104,27 @@ main() {
         help|--help|-h)
             show_help
             ;;
-        list)
-            list_commands
-            ;;
-        install)
-            install_command "$1"
-            ;;
-        uninstall)
-            uninstall_command "$1"
-            ;;
-        info)
-            show_command_info "$1"
-            ;;
-        update)
-            echo -e "${YELLOW}Update functionality coming soon!${NC}"
-            ;;
         create)
-            create_command "$1"
+            source "$LIE_HOME/utils/module_creator.sh"
+            create_module "$1"
+            ;;
+        add-command)
+            source "$LIE_HOME/utils/subcommand_creator.sh"
+            add_subcommand "$1"
+            ;;
+        list)
+            source "$LIE_HOME/utils/module_lister.sh"
+            list_modules
             ;;
         *)
-            # Check if it's an installed command
-            local cmd_path="$COMMANDS_DIR/${COMMAND}.sh"
-            if [ -f "$cmd_path" ]; then
-                log debug "Executing command: $cmd_path with args: $*"
-                exec "$cmd_path" "$@"
+            # Check if it's an installed module
+            local module_script="$MODULES_DIR/${COMMAND}/${COMMAND}.sh"
+            if [ -f "$module_script" ]; then
+                log debug "Executing module: $module_script with args: $*"
+                exec "$module_script" "$@"
             else
-                echo -e "${RED}Unknown command: $COMMAND${NC}"
-                echo "Run 'lie help' for available commands"
+                echo -e "${RED}Unknown module: $COMMAND${NC}"
+                echo "Run 'lie help' for available modules"
                 exit 1
             fi
             ;;
