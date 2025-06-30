@@ -66,11 +66,19 @@ show_help() {
     echo "Usage: lie <module> [subcommand] [options]"
     echo ""
     echo "Framework Commands:"
-    echo "  create <module>        Create a new module from template"
-    echo "  add-command <module>   Create a CLI package for development"
+    echo "  create <module>        Create a config file for a new module"
+    echo "  package <module>       Generate CLI package from config file"
     echo "  install <package>      Install a CLI package (e.g., hive_cli)"
+    echo "  add-command <module>   Create a CLI package for development (legacy)"
     echo "  list                   List all installed modules"
     echo "  help                   Show this help message"
+    echo ""
+    echo "Workflow:"
+    echo "  1. lie create <module>     # Create config file"
+    echo "  2. Edit <module>.json      # Customize commands and flags"
+    echo "  3. lie package <module>    # Generate CLI package"
+    echo "  4. Edit commands.sh        # Add your logic"
+    echo "  5. lie install <module>    # Install the module"
     echo ""
     echo "Installed Modules:"
     
@@ -109,7 +117,7 @@ install_package() {
     local install_script="$package_dir/install.sh"
     if [ ! -f "$install_script" ]; then
         echo -e "${RED}Error: Install script not found in '$package_dir'${NC}"
-        echo "Make sure this is a valid CLI package created with 'lie add-command'"
+        echo "Make sure this is a valid CLI package created with 'lie package'"
         exit 1
     fi
     
@@ -140,15 +148,19 @@ main() {
             show_help
             ;;
         create)
-            source "$LIE_HOME/utils/module_creator.sh"
-            create_module "$1"
+            source "$LIE_HOME/utils/config_creator.sh"
+            create_config "$1"
+            ;;
+        package)
+            source "$LIE_HOME/utils/package_generator.sh"
+            package_from_config "$1"
+            ;;
+        install)
+            install_package "$1"
             ;;
         add-command)
             source "$LIE_HOME/utils/subcommand_creator.sh"
             add_subcommand "$1"
-            ;;
-        install)
-            install_package "$1"
             ;;
         list)
             source "$LIE_HOME/utils/module_lister.sh"
