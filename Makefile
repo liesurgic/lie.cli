@@ -30,7 +30,7 @@ uninstall:
 # Run tests
 test:
 	@echo "Running lie CLI Framework tests..."
-	@./tests/test_framework.sh
+	@./tests/run_tests.sh
 
 # Clean temporary files
 clean:
