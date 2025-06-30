@@ -262,15 +262,28 @@ cd my-tool_cli
 
 ## 🧪 Testing
 
-The framework includes comprehensive test suites:
+The framework includes comprehensive test suites in the `tests/` directory:
 
 ```bash
-# Run basic workflow test
-./test_new_workflow.sh
+# Run all tests
+./tests/run_tests.sh
 
-# Run comprehensive test
-./test_comprehensive.sh
+# Run individual test suites
+./tests/test_new_workflow.sh
+./tests/test_comprehensive.sh
 ```
+
+### Test Structure
+
+```
+tests/
+├── run_tests.sh              # Test runner (runs all tests)
+├── test_new_workflow.sh      # Basic workflow test
+├── test_comprehensive.sh     # Advanced functionality test
+└── .tmp/                     # Test artifacts (git ignored)
+```
+
+The `.tmp/` directory contains test-generated files and is automatically cleaned up after each test run.
 
 ## 📝 Examples
 

@@ -14,6 +14,7 @@ NC='\033[0m'
 TEST_MODULE="test-workflow"
 TEST_ALIAS="tw"
 LIE_HOME="$HOME/.lie"
+TEST_TMP_DIR="$(dirname "$0")/.tmp"
 
 echo -e "${BLUE}🧪 Testing New Config-Driven Workflow${NC}"
 echo "=========================================="
@@ -21,7 +22,7 @@ echo "=========================================="
 # Cleanup
 cleanup() {
     echo -e "${YELLOW}🧹 Cleaning up...${NC}"
-    rm -rf "${TEST_MODULE}.json" "${TEST_MODULE}_cli"
+    rm -rf "$TEST_TMP_DIR/${TEST_MODULE}.json" "$TEST_TMP_DIR/${TEST_MODULE}_cli"
     rm -rf "$LIE_HOME/modules/$TEST_MODULE"
     rm -f "$HOME/.local/bin/$TEST_ALIAS"
 }
@@ -44,6 +45,7 @@ test_error() {
 
 # Test 1: Create config
 test_step "1. Create Config" "Creating config file"
+cd "$TEST_TMP_DIR"
 echo -e "Test workflow module\n$TEST_ALIAS" | lie create $TEST_MODULE
 
 if [ ! -f "${TEST_MODULE}.json" ]; then
@@ -108,7 +110,7 @@ test_success "Logic added"
 test_step "5. Install" "Installing package"
 cd "${TEST_MODULE}_cli"
 ./install.sh
-cd ..
+cd ../..
 test_success "Package installed"
 
 # Test 6: Test alias

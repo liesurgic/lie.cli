@@ -15,6 +15,7 @@ NC='\033[0m'
 TEST_MODULE="comprehensive-test"
 TEST_ALIAS="ct"
 LIE_HOME="$HOME/.lie"
+TEST_TMP_DIR="$(dirname "$0")/.tmp"
 
 echo -e "${BLUE}🧪 Comprehensive Test Suite${NC}"
 echo "============================="
@@ -22,7 +23,7 @@ echo "============================="
 # Cleanup
 cleanup() {
     echo -e "${YELLOW}🧹 Cleaning up...${NC}"
-    rm -rf "${TEST_MODULE}.json" "${TEST_MODULE}_cli"
+    rm -rf "$TEST_TMP_DIR/${TEST_MODULE}.json" "$TEST_TMP_DIR/${TEST_MODULE}_cli"
     rm -rf "$LIE_HOME/modules/$TEST_MODULE"
     rm -f "$HOME/.local/bin/$TEST_ALIAS"
 }
@@ -45,6 +46,7 @@ test_error() {
 
 # Test 1: Create config with complex structure
 test_step "1. Create Complex Config" "Creating config with multiple commands and flags"
+cd "$TEST_TMP_DIR"
 echo -e "Comprehensive test module with complex commands\n$TEST_ALIAS" | lie create $TEST_MODULE
 
 cat > "${TEST_MODULE}.json" <<EOF
@@ -192,7 +194,7 @@ test_success "Complex logic added"
 test_step "4. Install" "Installing the complex package"
 cd "${TEST_MODULE}_cli"
 ./install.sh
-cd ..
+cd ../..
 test_success "Package installed"
 
 # Test 5: Test all commands with flags
