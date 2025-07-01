@@ -1,0 +1,29 @@
+{
+    "name": "test_module",
+    "description": "Simple comprehensive test module",
+    "alias": "test_alias",
+    "commands": [
+        {
+            "name": "deploy",
+            "description": "Deploy with various flags",
+            "flags": [
+                { "name": "env", "shorthand": "e", "description": "Environment" },
+                { "name": "force", "shorthand": "f", "description": "Force deploy" },
+                { "name": "dry-run", "shorthand": "d", "description": "Dry run" }
+            ]
+        },
+        {
+            "name": "build",
+            "description": "Build with flags",
+            "flags": [
+                { "name": "production", "shorthand": "p", "description": "Production build" },
+                { "name": "verbose", "shorthand": "v", "description": "Verbose output" }
+            ]
+        },
+        {
+            "name": "test",
+            "description": "Simple test command",
+            "flags": []
+        }
+    ]
+} 

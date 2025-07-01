@@ -1,0 +1,28 @@
+{
+    "name": "test_flow_1",
+    "description": "Test flow command",
+    "alias": "",
+    "commands": [
+        {
+            "name": "start",
+            "description": "Starts the test_flow_1",
+            "flags": [
+                {
+                    "name": "force",
+                    "shorthand": "f",
+                    "description": "Force start even if already running"
+                }
+            ]
+        },
+        {
+            "name": "stop",
+            "description": "Stops the test_flow_1",
+            "flags": []
+        },
+        {
+            "name": "status",
+            "description": "Shows the status of test_flow_1",
+            "flags": []
+        }
+    ]
+}

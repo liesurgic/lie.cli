@@ -1,0 +1,28 @@
+{
+    "name": "hello_example",
+    "description": "Example hello command",
+    "alias": "hello",
+    "commands": [
+        {
+            "name": "start",
+            "description": "Starts the hello_example",
+            "flags": [
+                {
+                    "name": "force",
+                    "shorthand": "f",
+                    "description": "Force start even if already running"
+                }
+            ]
+        },
+        {
+            "name": "stop",
+            "description": "Stops the hello_example",
+            "flags": []
+        },
+        {
+            "name": "status",
+            "description": "Shows the status of hello_example",
+            "flags": []
+        }
+    ]
+}
